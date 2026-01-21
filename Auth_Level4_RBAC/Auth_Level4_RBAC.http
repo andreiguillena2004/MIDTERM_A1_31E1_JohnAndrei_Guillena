@@ -1,0 +1,6 @@
+@Auth_Level4_RBAC_HostAddress = http://localhost:5038
+
+GET {{Auth_Level4_RBAC_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

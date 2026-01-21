@@ -1,0 +1,6 @@
+@Auth_Level5_IdSrv_HostAddress = http://localhost:5125
+
+GET {{Auth_Level5_IdSrv_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

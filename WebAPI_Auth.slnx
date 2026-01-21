@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Auth_Level1_Basic/Auth_Level1_Basic.csproj" />
+  <Project Path="Auth_Level2_Cookie/Auth_Level2_Cookie.csproj" />
+  <Project Path="Auth_Level3_JWT/Auth_Level3_JWT.csproj" />
+  <Project Path="Auth_Level4_RBAC/Auth_Level4_RBAC.csproj" />
+  <Project Path="Auth_Level5_IdSrv/Auth_Level5_IdSrv.csproj" />
+</Solution>

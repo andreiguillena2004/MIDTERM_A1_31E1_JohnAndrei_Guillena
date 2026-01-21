@@ -1,0 +1,6 @@
+@Auth_Level2_Cookie_HostAddress = http://localhost:5081
+
+GET {{Auth_Level2_Cookie_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
