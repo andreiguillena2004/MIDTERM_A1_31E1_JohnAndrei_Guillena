@@ -1,3 +1,4 @@
+﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Auth_Level1_Basic.Data;
@@ -5,24 +6,6 @@ using Auth_Level1_Basic.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Auth_Level1_Basic.Middleware;
-
-
-public class SomeRandomMiddleware
-{
-    private readonly RequestDelegate _next;
-
-    public SomeRandomMiddleware(RequestDelegate next)
-    {
-        _next = next;
-    }
-    public async Task Invoke(HttpContext context)
-    {
-       
-        var temp = context.Request.Headers;
-        Console.WriteLine("Hello from SomeRandomMiddleware");
-    }
-}
-
 
 public class BasicAuthMiddleware
 {
@@ -33,46 +16,62 @@ public class BasicAuthMiddleware
         _next = next;
     }
 
-    public async Task Invoke(HttpContext context)//, AppDbContext db)
+    public async Task Invoke(HttpContext context, AppDbContext db)
     {
-        // If no Authorization header found, just return 401
+        // 1️⃣ Check for Authorization header
         if (!context.Request.Headers.ContainsKey("Authorization"))
         {
-            context.Response.StatusCode = 401;
+            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            await context.Response.WriteAsync("Missing Authorization header");
             return;
         }
 
         try
         {
             var authHeader = AuthenticationHeaderValue.Parse(context.Request.Headers["Authorization"]);
-            var credentialBytes = Convert.FromBase64String(authHeader.Parameter);
-            var credentials = Encoding.UTF8.GetString(credentialBytes).Split(':', 2);
-            var username = credentials[0];
-            var password = credentials[1];
-
-            // Verify User
-            User user = null; //= await db.Users.FirstOrDefaultAsync(u => u.Username == username && u.Password == password);
-
-            if(username == "admin" && password == "123")
+            if (authHeader.Scheme != "Basic")
             {
-                user = new User { Username = "admin", Password = "123" };
-            }
-
-            if (user == null)
-            {
-                context.Response.StatusCode = 401;
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                await context.Response.WriteAsync("Only Basic auth is allowed");
                 return;
             }
 
-            // Success! Attach user to context items
+            // 2️⃣ Decode Base64
+            var credentialBytes = Convert.FromBase64String(authHeader.Parameter ?? "");
+            var credentials = Encoding.UTF8.GetString(credentialBytes).Split(':', 2);
+
+            if (credentials.Length != 2)
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                await context.Response.WriteAsync("Invalid credentials format");
+                return;
+            }
+
+            var username = credentials[0];
+            var password = credentials[1];
+
+            // 3️⃣ Lookup in SQLite Users table
+            var user = await db.Users.FirstOrDefaultAsync(u =>
+                u.Username == username && u.Password == password);
+
+            if (user == null)
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                await context.Response.WriteAsync("Invalid username or password");
+                return;
+            }
+
+            // 4️⃣ Success: attach user to context
             context.Items["User"] = user;
         }
         catch
         {
-            context.Response.StatusCode = 401;
+            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            await context.Response.WriteAsync("Invalid Authorization header");
             return;
         }
 
+        // Continue to next middleware
         await _next(context);
     }
 }

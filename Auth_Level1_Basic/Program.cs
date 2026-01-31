@@ -8,6 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
+// Register SQLite
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=auth.db"));
 
 // SWAGGER CONFIG (Basic Auth)
 builder.Services.AddSwaggerGen(c =>
@@ -34,13 +37,21 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// Auto-migrate SQLite
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 // SWAGGER MIDDLEWARE
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
-app.UseMiddleware<SomeRandomMiddleware>();
+// Basic Auth middleware
+app.UseMiddleware<BasicAuthMiddleware>();
 
 app.MapControllers();
 
